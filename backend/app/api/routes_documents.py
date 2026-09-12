@@ -1,15 +1,21 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
-from app.deps import get_blob_store, get_document_repo, get_extracted_field_repo
+from app.api.security import require_owned_field, require_owned_return
+from app.db.session import get_db
+from app.deps import get_auth_provider, get_blob_store, get_document_repo, get_extracted_field_repo, get_tax_return_repo
 from app.repositories.interfaces import (
+    AuthProvider,
     DocumentBlobStore,
     DocumentRepository,
     ExtractedFieldRepository,
+    TaxReturnRepository,
 )
 from app.services.document_service import upload_and_extract
+from app.services.rate_limit_service import RateLimitExceededError, check_and_increment_upload_usage
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -38,11 +44,26 @@ class CorrectFieldRequest(BaseModel):
 @router.post("/upload", response_model=DocumentOut)
 async def upload_document(
     tax_return_id: UUID,
+    request: Request,
     file: UploadFile = File(...),
+    auth: AuthProvider = Depends(get_auth_provider),
+    return_repo: TaxReturnRepository = Depends(get_tax_return_repo),
     document_repo: DocumentRepository = Depends(get_document_repo),
     field_repo: ExtractedFieldRepository = Depends(get_extracted_field_repo),
     blob_store: DocumentBlobStore = Depends(get_blob_store),
+    db: Session = Depends(get_db),
 ) -> DocumentOut:
+    user = auth.get_current_user(request)
+    require_owned_return(tax_return_id, user, return_repo)
+
+    try:
+        check_and_increment_upload_usage(db, user.id)
+    except RateLimitExceededError as e:
+        raise HTTPException(
+            status_code=429,
+            detail=f"You've reached today's limit of {e.limit} uploads. Please try again tomorrow.",
+        )
+
     content = await file.read()
     document = upload_and_extract(
         tax_return_id=tax_return_id,
@@ -64,8 +85,14 @@ async def upload_document(
 @router.get("", response_model=list[DocumentOut])
 def list_documents(
     tax_return_id: UUID,
+    request: Request,
+    auth: AuthProvider = Depends(get_auth_provider),
+    return_repo: TaxReturnRepository = Depends(get_tax_return_repo),
     document_repo: DocumentRepository = Depends(get_document_repo),
 ) -> list[DocumentOut]:
+    user = auth.get_current_user(request)
+    require_owned_return(tax_return_id, user, return_repo)
+
     docs = document_repo.list_for_return(tax_return_id)
     return [
         DocumentOut(
@@ -82,9 +109,15 @@ def list_documents(
 @router.get("/fields", response_model=list[ExtractedFieldOut])
 def list_fields_for_return(
     tax_return_id: UUID,
+    request: Request,
     confirmed_only: bool = False,
+    auth: AuthProvider = Depends(get_auth_provider),
+    return_repo: TaxReturnRepository = Depends(get_tax_return_repo),
     field_repo: ExtractedFieldRepository = Depends(get_extracted_field_repo),
 ) -> list[ExtractedFieldOut]:
+    user = auth.get_current_user(request)
+    require_owned_return(tax_return_id, user, return_repo)
+
     fields = field_repo.list_for_return(tax_return_id, confirmed_only=confirmed_only)
     return [
         ExtractedFieldOut(
@@ -102,12 +135,16 @@ def list_fields_for_return(
 @router.patch("/fields/{field_id}/confirm", response_model=ExtractedFieldOut)
 def confirm_field(
     field_id: UUID,
+    request: Request,
+    auth: AuthProvider = Depends(get_auth_provider),
+    return_repo: TaxReturnRepository = Depends(get_tax_return_repo),
     field_repo: ExtractedFieldRepository = Depends(get_extracted_field_repo),
 ) -> ExtractedFieldOut:
+    user = auth.get_current_user(request)
+    require_owned_field(field_id, user, field_repo, return_repo)
+
     field_repo.confirm(field_id)
     updated = field_repo.get(field_id)
-    if updated is None:
-        raise HTTPException(status_code=404, detail="Field not found")
     return ExtractedFieldOut(
         id=updated.id,
         field_name=updated.field_name,
@@ -122,8 +159,14 @@ def confirm_field(
 def correct_field(
     field_id: UUID,
     body: CorrectFieldRequest,
+    request: Request,
+    auth: AuthProvider = Depends(get_auth_provider),
+    return_repo: TaxReturnRepository = Depends(get_tax_return_repo),
     field_repo: ExtractedFieldRepository = Depends(get_extracted_field_repo),
 ) -> ExtractedFieldOut:
+    user = auth.get_current_user(request)
+    require_owned_field(field_id, user, field_repo, return_repo)
+
     updated = field_repo.correct(field_id, body.new_value)
     return ExtractedFieldOut(
         id=updated.id,

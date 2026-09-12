@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { chatApi } from "../api/chatApi";
+import { ApiError } from "../api/client";
 import { documentsApi, type ExtractedField } from "../api/documentsApi";
+import type { User } from "../api/authApi";
 import { ChatWindow } from "../components/chat/ChatWindow";
 import { ChatInput } from "../components/chat/ChatInput";
 import type { ChatMessage } from "../components/chat/MessageBubble";
@@ -9,7 +11,15 @@ import { FieldConfirmationPanel } from "../components/documents/FieldConfirmatio
 import { ReturnSummary } from "../components/review/ReturnSummary";
 import { PriorYearPanel } from "../components/priorYear/PriorYearPanel";
 
-export function ChatPage({ taxReturnId }: { taxReturnId: string }) {
+export function ChatPage({
+  taxReturnId,
+  user,
+  onLogout,
+}: {
+  taxReturnId: string;
+  user: User;
+  onLogout: () => void;
+}) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
@@ -47,11 +57,13 @@ export function ChatPage({ taxReturnId }: { taxReturnId: string }) {
           refreshFields();
         }
       );
-    } catch {
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Something went wrong reaching Synthia. Please try again.";
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, text: "(Something went wrong reaching Synthia. Please try again.)" } : m
-        )
+        prev.map((m) => (m.id === assistantId ? { ...m, text: `(${message})` } : m))
       );
       setSending(false);
     }
@@ -60,11 +72,27 @@ export function ChatPage({ taxReturnId }: { taxReturnId: string }) {
   return (
     <div style={{ display: "flex", height: "100vh" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <header style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #e5e5e5" }}>
-          <strong>Synthia</strong>
-          <span style={{ color: "#888", marginLeft: "0.5rem", fontSize: "0.85rem" }}>
-            your tax return, one conversation at a time
-          </span>
+        <header
+          style={{
+            padding: "0.75rem 1rem",
+            borderBottom: "1px solid #e5e5e5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <strong>Synthia</strong>
+            <span style={{ color: "#888", marginLeft: "0.5rem", fontSize: "0.85rem" }}>
+              your tax return, one conversation at a time
+            </span>
+          </div>
+          <div style={{ fontSize: "0.85rem", color: "#666", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <span>{user.display_name}</span>
+            <button onClick={onLogout} style={{ fontSize: "0.8rem" }}>
+              Log out
+            </button>
+          </div>
         </header>
         <ChatWindow messages={messages} />
         <FieldConfirmationPanel fields={fields} onChanged={refreshFields} />

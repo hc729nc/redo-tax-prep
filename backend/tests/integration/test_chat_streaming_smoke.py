@@ -71,14 +71,20 @@ def live_server(tmp_path):
 
 @requires_api_key
 def test_chat_reply_streams_incrementally_not_as_one_blob(live_server):
-    return_resp = httpx.post(
-        f"{live_server}/api/returns", json={"tax_year": 2025, "filing_status": "single"}
+    # A plain httpx.Client (unlike bare httpx.post calls) persists cookies across
+    # requests, same as a browser - needed since every route here requires auth.
+    client = httpx.Client(base_url=live_server)
+
+    signup_resp = client.post(
+        "/api/auth/signup",
+        json={"email": "streaming-test@example.com", "password": "testpassword123", "display_name": "Streaming Test"},
     )
+    assert signup_resp.status_code == 200, signup_resp.text
+
+    return_resp = client.post("/api/returns", json={"tax_year": 2025, "filing_status": "single"})
     return_id = return_resp.json()["id"]
 
-    session_resp = httpx.post(
-        f"{live_server}/api/chat/sessions", json={"tax_return_id": return_id}
-    )
+    session_resp = client.post("/api/chat/sessions", json={"tax_return_id": return_id})
     session_id = session_resp.json()["id"]
 
     chunk_arrival_times = []
@@ -92,9 +98,9 @@ def test_chat_reply_streams_incrementally_not_as_one_blob(live_server):
         "In 2-3 sentences, explain what you'll help me do with my taxes this year, "
         "and mention when the filing deadline is."
     )
-    with httpx.stream(
+    with client.stream(
         "POST",
-        f"{live_server}/api/chat/sessions/{session_id}/messages/stream",
+        f"/api/chat/sessions/{session_id}/messages/stream",
         json={"text": prompt},
         timeout=30,
     ) as response:

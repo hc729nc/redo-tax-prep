@@ -1,0 +1,11 @@
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.pyc
+**/dist
+**/.pytest_cache
+backend/synthia.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/.env
+.git

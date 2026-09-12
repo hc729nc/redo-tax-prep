@@ -12,7 +12,7 @@ from app.repositories.interfaces import (
     ExtractedFieldRepository,
     TaxReturnRepository,
 )
-from app.repositories.mock_auth import MockAuthProvider
+from app.repositories.email_password_auth import EmailPasswordAuthProvider
 from app.repositories.sqlite_impl import (
     SqlAlchemyConversationSessionRepository,
     SqlAlchemyDocumentRepository,
@@ -49,5 +49,5 @@ def get_blob_store(settings: Settings = Depends(get_settings)) -> DocumentBlobSt
     return LocalFilesystemBlobStore(settings.storage_root)
 
 
-def get_auth_provider(db: Session = Depends(get_db)) -> AuthProvider:
-    return MockAuthProvider(db)
+def get_auth_provider(db: Session = Depends(get_db)) -> EmailPasswordAuthProvider:
+    return EmailPasswordAuthProvider(db)

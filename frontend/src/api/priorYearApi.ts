@@ -1,6 +1,5 @@
 import type { UploadedDocument } from "./documentsApi";
-
-const BASE_URL = "http://localhost:8000";
+import { API_BASE_URL as BASE_URL } from "./config";
 
 export interface ComparisonLine {
   current: string;

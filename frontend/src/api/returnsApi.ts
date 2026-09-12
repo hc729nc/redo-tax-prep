@@ -1,6 +1,5 @@
 import { apiClient } from "./client";
-
-const BASE_URL = "http://localhost:8000";
+import { API_BASE_URL as BASE_URL } from "./config";
 
 export type FilingStatus =
   | "single"

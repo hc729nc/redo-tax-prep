@@ -48,13 +48,20 @@ def _install_isolated_overrides(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    """Sync TestClient for correctness checks. NOT suitable for verifying real
-    incremental streaming timing - its blocking portal (and httpx's ASGITransport,
-    also tried) both drain the whole async response before handing it back, even
-    for a genuinely-streaming app. See test_chat_streaming_smoke.py, which uses a
-    real uvicorn subprocess instead for that specific check."""
+    """Sync TestClient for correctness checks, pre-authenticated as a fresh test
+    user (TestClient persists cookies across requests like a browser, so every
+    subsequent call in a test is already logged in). NOT suitable for verifying
+    real incremental streaming timing - its blocking portal (and httpx's
+    ASGITransport, also tried) both drain the whole async response before handing
+    it back, even for a genuinely-streaming app. See test_chat_streaming_smoke.py,
+    which uses a real uvicorn subprocess instead for that specific check."""
     _install_isolated_overrides(tmp_path, monkeypatch)
     with TestClient(app) as test_client:
+        signup_resp = test_client.post(
+            "/api/auth/signup",
+            json={"email": "test-user@example.com", "password": "testpassword123", "display_name": "Test User"},
+        )
+        assert signup_resp.status_code == 200, signup_resp.text
         yield test_client
     app.dependency_overrides.clear()
 

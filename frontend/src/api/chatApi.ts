@@ -1,6 +1,5 @@
-import { apiClient } from "./client";
-
-const BASE_URL = "http://localhost:8000";
+import { apiClient, ApiError } from "./client";
+import { API_BASE_URL as BASE_URL } from "./config";
 
 export interface ChatSession {
   id: string;
@@ -27,7 +26,14 @@ export const chatApi = {
       body: JSON.stringify({ text }),
     });
     if (!res.ok || !res.body) {
-      throw new Error(`Chat stream failed: ${res.status}`);
+      let message = `Chat stream failed: ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body?.detail) message = body.detail;
+      } catch {
+        // not JSON - keep the generic message
+      }
+      throw new ApiError(res.status, message);
     }
 
     const reader = res.body.getReader();

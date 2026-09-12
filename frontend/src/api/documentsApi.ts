@@ -1,6 +1,5 @@
-import { apiClient } from "./client";
-
-const BASE_URL = "http://localhost:8000";
+import { apiClient, ApiError } from "./client";
+import { API_BASE_URL as BASE_URL } from "./config";
 
 export interface UploadedDocument {
   id: string;
@@ -31,7 +30,16 @@ export const documentsApi = {
       credentials: "include",
       body: formData,
     });
-    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    if (!res.ok) {
+      let message = `Upload failed: ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body?.detail) message = body.detail;
+      } catch {
+        // not JSON - keep the generic message
+      }
+      throw new ApiError(res.status, message);
+    }
     return res.json();
   },
 

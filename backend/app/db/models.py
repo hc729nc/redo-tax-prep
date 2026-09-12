@@ -20,7 +20,8 @@ class UserModel(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     display_name: Mapped[str] = mapped_column(String(255))
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     tax_returns: Mapped[list["TaxReturnModel"]] = relationship(back_populates="user")
@@ -80,6 +81,20 @@ class ExtractedFieldModel(Base):
 
     tax_return: Mapped["TaxReturnModel"] = relationship(back_populates="extracted_fields")
     document: Mapped["UploadedDocumentModel | None"] = relationship(back_populates="extracted_fields")
+
+
+class DailyUsageModel(Base):
+    """One row per (user, day) - incremented as they send chat messages or upload
+    documents, checked against Settings.max_*_per_day before the action proceeds.
+    Abuse/cost protection for a publicly reachable deployment, not a feature."""
+
+    __tablename__ = "daily_usage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
+    usage_date: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD, UTC
+    chat_messages_count: Mapped[int] = mapped_column(Integer, default=0)
+    uploads_count: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class ConversationSessionModel(Base):

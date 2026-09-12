@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { documentsApi, type UploadedDocument } from "../../api/documentsApi";
+import { ApiError } from "../../api/client";
 
 export function UploadWidget({
   taxReturnId,
@@ -10,6 +11,7 @@ export function UploadWidget({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleFiles(files: FileList | null) {
     const file = files?.[0];
@@ -19,7 +21,8 @@ export function UploadWidget({
       const doc = await documentsApi.upload(taxReturnId, file);
       onUploaded(doc);
       setStatus("idle");
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof ApiError ? err.message : "Upload failed - try again.");
       setStatus("error");
     } finally {
       if (inputRef.current) inputRef.current.value = "";
@@ -50,7 +53,9 @@ export function UploadWidget({
         Upload a document
       </label>
       {status === "uploading" && <span style={{ fontSize: "0.85rem", color: "#666" }}>Uploading and extracting...</span>}
-      {status === "error" && <span style={{ fontSize: "0.85rem", color: "#b00020" }}>Upload failed - try again.</span>}
+      {status === "error" && (
+        <span style={{ fontSize: "0.85rem", color: "#b00020" }}>{errorMessage}</span>
+      )}
     </div>
   );
 }

@@ -49,3 +49,8 @@ npm run dev
 All dollar calculations are performed by a deterministic Python engine in
 `backend/app/taxcalc/` — the Claude-powered agent never computes tax amounts itself, only calls
 into this engine and reports its output.
+
+## Accounts & deploying a shared instance
+
+Real email/password accounts keep each person's tax data private to them (every API route checks
+return ownership). See [`docs/deployment.md`](docs/deployment.md) to deploy a live, shared instance.

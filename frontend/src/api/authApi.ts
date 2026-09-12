@@ -7,6 +7,16 @@ export interface User {
 }
 
 export const authApi = {
-  createSession: () => apiClient.request<User>("/api/auth/session", { method: "POST" }),
   me: () => apiClient.request<User>("/api/auth/me"),
+  signup: (email: string, password: string, display_name: string) =>
+    apiClient.request<User>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({ email, password, display_name }),
+    }),
+  login: (email: string, password: string) =>
+    apiClient.request<User>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+  logout: () => apiClient.request<{ status: string }>("/api/auth/logout", { method: "POST" }),
 };
