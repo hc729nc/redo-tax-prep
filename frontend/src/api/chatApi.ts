@@ -6,12 +6,20 @@ export interface ChatSession {
   tax_return_id: string;
 }
 
+export interface HistoryMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
 export const chatApi = {
-  createSession: (taxReturnId: string) =>
+  createOrResumeSession: (taxReturnId: string) =>
     apiClient.request<ChatSession>("/api/chat/sessions", {
       method: "POST",
       body: JSON.stringify({ tax_return_id: taxReturnId }),
     }),
+
+  getHistory: (sessionId: string) =>
+    apiClient.request<HistoryMessage[]>(`/api/chat/sessions/${sessionId}/history`),
 
   streamMessage: async (
     sessionId: string,

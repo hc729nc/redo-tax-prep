@@ -301,6 +301,15 @@ class SqlAlchemyConversationSessionRepository(ConversationSessionRepository):
         m = self.db.get(ConversationSessionModel, str(session_id))
         return _conversation_session_to_entity(m) if m else None
 
+    def get_latest_for_return(self, tax_return_id: UUID) -> ConversationSession | None:
+        m = (
+            self.db.query(ConversationSessionModel)
+            .filter(ConversationSessionModel.tax_return_id == str(tax_return_id))
+            .order_by(ConversationSessionModel.last_active_at.desc())
+            .first()
+        )
+        return _conversation_session_to_entity(m) if m else None
+
     def touch(self, session_id: UUID) -> None:
         m = self.db.get(ConversationSessionModel, str(session_id))
         if m is None:

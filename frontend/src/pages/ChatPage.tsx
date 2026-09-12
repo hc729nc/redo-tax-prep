@@ -27,7 +27,13 @@ export function ChatPage({
   const nextId = useRef(0);
 
   useEffect(() => {
-    chatApi.createSession(taxReturnId).then((s) => setSessionId(s.id));
+    chatApi.createOrResumeSession(taxReturnId).then(async (s) => {
+      setSessionId(s.id);
+      const history = await chatApi.getHistory(s.id);
+      setMessages(
+        history.map((m) => ({ id: String(nextId.current++), role: m.role, text: m.text }))
+      );
+    });
     refreshFields();
   }, [taxReturnId]);
 

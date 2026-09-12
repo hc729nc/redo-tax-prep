@@ -103,6 +103,9 @@ class ConversationSessionRepository(ABC):
     def get(self, session_id: UUID) -> ConversationSession | None: ...
 
     @abstractmethod
+    def get_latest_for_return(self, tax_return_id: UUID) -> ConversationSession | None: ...
+
+    @abstractmethod
     def touch(self, session_id: UUID) -> None: ...
 
 
