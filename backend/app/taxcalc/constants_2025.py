@@ -61,6 +61,38 @@ TAX_BRACKETS: dict[FilingStatus, list[TaxBracket]] = {
     ],
 }
 
+# Long-term capital gains preferential rate thresholds, confirmed via Tax
+# Foundation / NerdWallet for 2025 (cross-checked across both sources).
+LongTermCapitalGainsBracket = tuple[Decimal | None, Decimal]
+
+LTCG_BRACKETS: dict[FilingStatus, list[LongTermCapitalGainsBracket]] = {
+    FilingStatus.SINGLE: [
+        (Decimal("48350"), Decimal("0.00")),
+        (Decimal("533400"), Decimal("0.15")),
+        (None, Decimal("0.20")),
+    ],
+    FilingStatus.MARRIED_FILING_JOINTLY: [
+        (Decimal("96700"), Decimal("0.00")),
+        (Decimal("600050"), Decimal("0.15")),
+        (None, Decimal("0.20")),
+    ],
+    FilingStatus.MARRIED_FILING_SEPARATELY: [
+        (Decimal("48350"), Decimal("0.00")),
+        (Decimal("300000"), Decimal("0.15")),
+        (None, Decimal("0.20")),
+    ],
+    FilingStatus.HEAD_OF_HOUSEHOLD: [
+        (Decimal("64750"), Decimal("0.00")),
+        (Decimal("566700"), Decimal("0.15")),
+        (None, Decimal("0.20")),
+    ],
+}
+
+# A net capital loss can only offset up to this much ordinary income per year;
+# anything beyond carries over to future years, which this MVP does not track
+# (no persistent multi-year state) - see docs/mvp-scope.md.
+CAPITAL_LOSS_ANNUAL_LIMIT = Decimal("3000")
+
 SCHEDULE_B_THRESHOLD = Decimal("1500")
 
 SE_TAX_RATE = Decimal("0.153")  # 12.4% Social Security + 2.9% Medicare

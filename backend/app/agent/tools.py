@@ -58,6 +58,7 @@ def build_tools_for_return(tax_return_id: UUID) -> list:
                 "1099-DIV (dividend income)": "1099_div.box1a_ordinary_dividends",
                 "1099-NEC (self-employment/freelance income)": "1099_nec.box1_nonemployee_compensation",
                 "1098 (mortgage interest, if itemizing)": "schedule_a.mortgage_interest",
+                "1099-B (investment sales/capital gains, if any)": "1099_b.net_long_term_gain_loss",
             }
             not_yet_provided = [
                 label for label, field_name in doc_types.items() if field_name not in confirmed_names
@@ -116,7 +117,10 @@ def build_tools_for_return(tax_return_id: UUID) -> list:
         1099_nec.box1_nonemployee_compensation, 1099_nec.total_expenses (business
         expenses against self-employment income), schedule_a.mortgage_interest,
         schedule_a.charitable_contributions (cash gifts only - only worth itemizing
-        if these exceed the standard deduction; mention that tradeoff if relevant).
+        if these exceed the standard deduction; mention that tradeoff if relevant),
+        1099_b.net_short_term_gain_loss, 1099_b.net_long_term_gain_loss (net
+        investment gain/loss for assets held one year or less / more than one year
+        respectively - use a negative value for a net loss).
 
         Pass confirmed=False only when proposing a DRAFT value carried forward from
         last year's return (via lookup_prior_year_field) - that still needs the

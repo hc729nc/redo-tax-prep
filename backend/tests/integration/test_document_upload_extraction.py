@@ -55,6 +55,18 @@ def test_each_1099_and_1098_variant_extracts_correctly(
 
 
 @requires_api_key
+def test_1099_b_extracts_both_short_and_long_term_aggregate_totals(client, return_id):
+    doc = _upload(client, return_id, "sample_1099_b.pdf")
+    assert doc["document_type"] == "1099_b"
+
+    fields = client.get(f"/api/documents/fields?tax_return_id={return_id}").json()
+    by_name = {f["field_name"]: f["value"] for f in fields}
+
+    assert by_name["1099_b.net_short_term_gain_loss"] == "-3000.00"
+    assert by_name["1099_b.net_long_term_gain_loss"] == "8000.00"
+
+
+@requires_api_key
 def test_prior_year_1040_extracts_all_summary_lines(client, return_id):
     with open(FIXTURES_DIR / "sample_prior_year_1040.pdf", "rb") as f:
         resp = client.post(

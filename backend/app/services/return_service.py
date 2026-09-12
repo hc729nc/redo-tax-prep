@@ -45,6 +45,8 @@ def _build_structured_input(
         self_employment_gross_receipts=values.get("1099_nec.box1_nonemployee_compensation", Decimal("0")),
         self_employment_expenses=values.get("1099_nec.total_expenses", Decimal("0")),
         itemized_deductions=itemized_deductions,
+        short_term_capital_gain=values.get("1099_b.net_short_term_gain_loss", Decimal("0")),
+        long_term_capital_gain=values.get("1099_b.net_long_term_gain_loss", Decimal("0")),
     )
 
 

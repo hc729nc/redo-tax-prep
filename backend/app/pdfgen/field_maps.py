@@ -15,6 +15,7 @@ FORM_1040_FIELD_MAP: dict[str, str] = {
     "1z": "topmostSubform[0].Page1[0].f1_57[0]",
     "2b": "topmostSubform[0].Page1[0].f1_59[0]",
     "3b": "topmostSubform[0].Page1[0].f1_61[0]",
+    "7": "topmostSubform[0].Page1[0].f1_70[0]",
     "8": "topmostSubform[0].Page1[0].f1_72[0]",
     "9": "topmostSubform[0].Page1[0].f1_73[0]",
     "10": "topmostSubform[0].Page1[0].f1_74[0]",
@@ -83,6 +84,15 @@ SCHEDULE_A_FIELD_MAP = {
     "11": "form1[0].Page1[0].f1_23[0]",  # Gifts by cash or check
     "14": "form1[0].Page1[0].f1_26[0]",  # Add lines 11 through 13
     "17": "form1[0].Page1[0].f1_30[0]",  # Total itemized deductions -> Form 1040 line 12e
+}
+
+# Schedule D (f1040sd.pdf) - aggregate-totals-only (no Form 8949 transaction
+# detail - see docs/mvp-scope.md). Lines 7 and 15 verified at +9.4pt offset from
+# their printed stamps (page 1); line 16 is the first field on page 2.
+SCHEDULE_D_FIELD_MAP = {
+    "7": "topmostSubform[0].Page1[0].f1_22[0]",  # Net short-term capital gain or (loss)
+    "15": "topmostSubform[0].Page1[0].f1_43[0]",  # Net long-term capital gain or (loss)
+    "16": "topmostSubform[0].Page2[0].f2_1[0]",  # Total capital gain or (loss) -> Form 1040 line 7
 }
 
 # Schedule SE (f1040sse.pdf) - simplified single-page 2025 revision. Only the

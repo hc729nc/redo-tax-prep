@@ -1,8 +1,16 @@
 from decimal import Decimal
 
 from app.domain.enums import FilingStatus
-from app.taxcalc.constants_2025 import STANDARD_DEDUCTION, TAX_BRACKETS
-from app.taxcalc.models import Form1040Result, LineItem, ScheduleAResult, ScheduleBResult, ScheduleCResult, ScheduleSEResult
+from app.taxcalc.constants_2025 import LTCG_BRACKETS, STANDARD_DEDUCTION, TAX_BRACKETS
+from app.taxcalc.models import (
+    Form1040Result,
+    LineItem,
+    ScheduleAResult,
+    ScheduleBResult,
+    ScheduleCResult,
+    ScheduleDResult,
+    ScheduleSEResult,
+)
 from app.taxcalc.rounding import round_dollars
 
 ZERO = Decimal("0")
@@ -26,6 +34,37 @@ def calculate_tax(taxable_income: Decimal, filing_status: FilingStatus) -> Decim
     return round_dollars(tax)
 
 
+def calculate_tax_with_ltcg(
+    taxable_income: Decimal, ltcg_amount: Decimal, filing_status: FilingStatus
+) -> Decimal:
+    """A simplified version of the Schedule D Tax Worksheet: ordinary income is
+    taxed at regular bracket rates, and the preferential-rate gain "stacks on top"
+    of it, taxed at 0%/15%/20% according to where it falls in total taxable income.
+
+    Simplifications vs. the real worksheet: no qualified-dividend preferential
+    treatment (not modeled - see docs/mvp-scope.md), and no 25%/28% special rates
+    for unrecaptured section 1250 gain or collectibles."""
+    if ltcg_amount <= ZERO:
+        return calculate_tax(taxable_income, filing_status)
+
+    ordinary_income = taxable_income - ltcg_amount
+    tax = calculate_tax(ordinary_income, filing_status)
+
+    remaining_gain = ltcg_amount
+    stack_position = ordinary_income
+    for upper_bound, rate in LTCG_BRACKETS[filing_status]:
+        if remaining_gain <= ZERO:
+            break
+        band_ceiling = taxable_income if upper_bound is None else min(upper_bound, taxable_income)
+        amount_in_band = max(ZERO, min(band_ceiling, stack_position + remaining_gain) - stack_position)
+        amount_in_band = min(amount_in_band, remaining_gain)
+        tax += amount_in_band * rate
+        remaining_gain -= amount_in_band
+        stack_position += amount_in_band
+
+    return round_dollars(tax)
+
+
 def compute_form_1040(
     *,
     filing_status: FilingStatus,
@@ -34,14 +73,16 @@ def compute_form_1040(
     federal_withholding_1099: Decimal = ZERO,
     schedule_b: ScheduleBResult | None = None,
     schedule_c: ScheduleCResult | None = None,
+    schedule_d: ScheduleDResult | None = None,
     schedule_se: ScheduleSEResult | None = None,
     schedule_a: ScheduleAResult | None = None,
 ) -> Form1040Result:
     taxable_interest = schedule_b.total_taxable_interest if schedule_b else ZERO
     ordinary_dividends = schedule_b.total_ordinary_dividends if schedule_b else ZERO
     business_income = schedule_c.net_profit if schedule_c else ZERO
+    capital_gain = schedule_d.total_capital_gain if schedule_d else ZERO
 
-    total_income = wages + taxable_interest + ordinary_dividends + business_income
+    total_income = wages + taxable_interest + ordinary_dividends + business_income + capital_gain
 
     adjustments_to_income = schedule_se.half_se_tax_deduction if schedule_se else ZERO
     agi = total_income - adjustments_to_income
@@ -52,7 +93,11 @@ def compute_form_1040(
     deduction_amount = itemized_total if deduction_is_itemized else standard_deduction
 
     taxable_income = max(agi - deduction_amount, ZERO)
-    tax_before_credits = calculate_tax(taxable_income, filing_status)
+    ltcg_eligible = schedule_d.gain_eligible_for_preferential_rate if schedule_d else ZERO
+    # The eligible LTCG amount can't exceed taxable income itself (e.g. a large
+    # deduction could otherwise make the "ordinary" portion go negative).
+    ltcg_eligible = min(ltcg_eligible, taxable_income)
+    tax_before_credits = calculate_tax_with_ltcg(taxable_income, ltcg_eligible, filing_status)
 
     se_tax = schedule_se.se_tax if schedule_se else ZERO
     total_tax = tax_before_credits + se_tax
@@ -68,6 +113,7 @@ def compute_form_1040(
         LineItem(line_ref="1z", label="Total wages", value=wages),
         LineItem(line_ref="2b", label="Taxable interest", value=taxable_interest),
         LineItem(line_ref="3b", label="Ordinary dividends", value=ordinary_dividends),
+        LineItem(line_ref="7", label="Capital gain or (loss)", value=capital_gain),
         LineItem(line_ref="8", label="Additional income from Schedule 1", value=business_income),
         LineItem(line_ref="9", label="Total income", value=total_income),
         LineItem(line_ref="10", label="Adjustments to income", value=adjustments_to_income),

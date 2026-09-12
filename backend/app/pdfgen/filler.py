@@ -12,6 +12,7 @@ from app.pdfgen.field_maps import (
     SCHEDULE_A_FIELD_MAP,
     SCHEDULE_B_FIELD_MAP,
     SCHEDULE_C_FIELD_MAP,
+    SCHEDULE_D_FIELD_MAP,
     SCHEDULE_SE_FIELD_MAP,
 )
 from app.taxcalc.models import ComputedReturn
@@ -111,6 +112,15 @@ def fill_form_1040(
             SCHEDULE_B_FIELD_MAP["6"]: _format_dollar(b.total_ordinary_dividends),
         }
         _append_and_fill(writer, "f1040sb.pdf", {0: fields})
+
+    if computed_return.schedule_d is not None:
+        d = computed_return.schedule_d
+        schedule_d_page1_fields = {
+            SCHEDULE_D_FIELD_MAP["7"]: _format_dollar(d.net_short_term_gain),
+            SCHEDULE_D_FIELD_MAP["15"]: _format_dollar(d.net_long_term_gain),
+        }
+        schedule_d_page2_fields = {SCHEDULE_D_FIELD_MAP["16"]: _format_dollar(d.total_capital_gain)}
+        _append_and_fill(writer, "f1040sd.pdf", {0: schedule_d_page1_fields, 1: schedule_d_page2_fields})
 
     if computed_return.schedule_c is not None:
         c = computed_return.schedule_c

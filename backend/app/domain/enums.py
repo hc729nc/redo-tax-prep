@@ -20,6 +20,7 @@ class DocumentType(str, Enum):
     FORM_1099_DIV = "1099_div"
     FORM_1099_NEC = "1099_nec"
     FORM_1098 = "1098"
+    FORM_1099_B = "1099_b"
     PRIOR_YEAR_1040 = "prior_year_1040"
     OTHER_UNRECOGNIZED = "other_unrecognized"
 

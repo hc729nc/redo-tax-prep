@@ -7,6 +7,7 @@ from app.pdfgen.field_maps import (
     SCHEDULE_A_FIELD_MAP,
     SCHEDULE_B_FIELD_MAP,
     SCHEDULE_C_FIELD_MAP,
+    SCHEDULE_D_FIELD_MAP,
     SCHEDULE_SE_FIELD_MAP,
 )
 from app.pdfgen.filler import IRS_FORMS_DIR
@@ -16,6 +17,7 @@ FORMS_AND_MAPS = [
     ("f1040sa.pdf", SCHEDULE_A_FIELD_MAP),
     ("f1040sb.pdf", SCHEDULE_B_FIELD_MAP),
     ("f1040sc.pdf", SCHEDULE_C_FIELD_MAP),
+    ("f1040sd.pdf", SCHEDULE_D_FIELD_MAP),
     ("f1040sse.pdf", SCHEDULE_SE_FIELD_MAP),
 ]
 

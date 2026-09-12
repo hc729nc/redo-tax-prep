@@ -3,6 +3,7 @@ from app.extraction.pypdf_extractor import RawExtraction
 
 _KEYWORD_RULES: list[tuple[DocumentType, list[str]]] = [
     (DocumentType.PRIOR_YEAR_1040, ["form 1040", "u.s. individual income tax return"]),
+    (DocumentType.FORM_1099_B, ["1099-b", "proceeds from broker"]),
     (DocumentType.FORM_1099_NEC, ["1099-nec", "nonemployee compensation"]),
     (DocumentType.FORM_1099_INT, ["1099-int", "interest income"]),
     (DocumentType.FORM_1099_DIV, ["1099-div", "dividends and distributions"]),

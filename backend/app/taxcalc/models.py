@@ -21,6 +21,8 @@ class StructuredReturnInput:
     self_employment_gross_receipts: Decimal = Decimal("0")
     self_employment_expenses: Decimal = Decimal("0")
     itemized_deductions: dict[str, Decimal] = field(default_factory=dict)
+    short_term_capital_gain: Decimal = Decimal("0")  # can be negative (a loss)
+    long_term_capital_gain: Decimal = Decimal("0")  # can be negative (a loss)
 
 
 @dataclass
@@ -56,6 +58,15 @@ class ScheduleBResult:
 
 
 @dataclass
+class ScheduleDResult:
+    net_short_term_gain: Decimal
+    net_long_term_gain: Decimal
+    total_capital_gain: Decimal  # after the $3,000 annual loss limit, if negative
+    gain_eligible_for_preferential_rate: Decimal  # the portion taxed at LTCG rates
+    line_items: list[LineItem]
+
+
+@dataclass
 class ScheduleAResult:
     total_itemized_deductions: Decimal
     line_items: list[LineItem]
@@ -84,11 +95,12 @@ class ComputedReturn:
     schedule_a: ScheduleAResult | None
     schedule_b: ScheduleBResult | None
     schedule_c: ScheduleCResult | None
+    schedule_d: ScheduleDResult | None
     schedule_se: ScheduleSEResult | None
 
     def all_line_items(self) -> list[LineItem]:
         items = list(self.form_1040.line_items)
-        for sched in (self.schedule_a, self.schedule_b, self.schedule_c, self.schedule_se):
+        for sched in (self.schedule_a, self.schedule_b, self.schedule_c, self.schedule_d, self.schedule_se):
             if sched is not None:
                 items.extend(sched.line_items)
         return items

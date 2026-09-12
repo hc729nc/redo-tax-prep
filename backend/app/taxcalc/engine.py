@@ -4,6 +4,7 @@ from app.taxcalc.models import ComputedReturn, StructuredReturnInput
 from app.taxcalc.schedule_a import compute_schedule_a
 from app.taxcalc.schedule_b import compute_schedule_b
 from app.taxcalc.schedule_c import compute_schedule_c
+from app.taxcalc.schedule_d import compute_schedule_d
 from app.taxcalc.schedule_se import compute_schedule_se
 
 
@@ -28,6 +29,13 @@ def compute_return(structured_input: StructuredReturnInput) -> ComputedReturn:
     if structured_input.itemized_deductions:
         schedule_a = compute_schedule_a(structured_input.itemized_deductions)
 
+    schedule_d = None
+    if structured_input.short_term_capital_gain or structured_input.long_term_capital_gain:
+        schedule_d = compute_schedule_d(
+            short_term_gain=structured_input.short_term_capital_gain,
+            long_term_gain=structured_input.long_term_capital_gain,
+        )
+
     form_1040 = compute_form_1040(
         filing_status=structured_input.filing_status,
         wages=structured_input.wages,
@@ -35,6 +43,7 @@ def compute_return(structured_input: StructuredReturnInput) -> ComputedReturn:
         federal_withholding_1099=structured_input.federal_withholding_1099,
         schedule_b=schedule_b,
         schedule_c=schedule_c,
+        schedule_d=schedule_d,
         schedule_se=schedule_se,
         schedule_a=schedule_a,
     )
@@ -45,5 +54,6 @@ def compute_return(structured_input: StructuredReturnInput) -> ComputedReturn:
         schedule_a=schedule_a,
         schedule_b=schedule_b,
         schedule_c=schedule_c,
+        schedule_d=schedule_d,
         schedule_se=schedule_se,
     )

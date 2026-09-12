@@ -14,6 +14,10 @@ CANONICAL_FIELDS_BY_DOC_TYPE: dict[DocumentType, list[str]] = {
     DocumentType.FORM_1099_DIV: ["1099_div.box1a_ordinary_dividends"],
     DocumentType.FORM_1099_NEC: ["1099_nec.box1_nonemployee_compensation"],
     DocumentType.FORM_1098: ["schedule_a.mortgage_interest"],
+    DocumentType.FORM_1099_B: [
+        "1099_b.net_short_term_gain_loss",
+        "1099_b.net_long_term_gain_loss",
+    ],
     DocumentType.PRIOR_YEAR_1040: [
         "prior_year.wages",
         "prior_year.taxable_interest",
@@ -29,6 +33,16 @@ CANONICAL_FIELDS_BY_DOC_TYPE: dict[DocumentType, list[str]] = {
 # to look for - helps Claude locate the right box instead of guessing from the name.
 _FIELD_HINTS: dict[str, str] = {
     "schedule_a.mortgage_interest": "Form 1098 Box 1 (mortgage interest received from payer)",
+    "1099_b.net_short_term_gain_loss": (
+        "The TOTAL/aggregate net short-term gain or loss, usually in a 'Summary of "
+        "Proceeds' section (e.g. 'Total Short-Term'). Only record if there's a clear "
+        "aggregate total - do not sum individual transaction rows yourself."
+    ),
+    "1099_b.net_long_term_gain_loss": (
+        "The TOTAL/aggregate net long-term gain or loss, usually in a 'Summary of "
+        "Proceeds' section (e.g. 'Total Long-Term'). Only record if there's a clear "
+        "aggregate total - do not sum individual transaction rows yourself."
+    ),
     "prior_year.wages": "Form 1040 line 1z (total wages)",
     "prior_year.taxable_interest": "Form 1040 line 2b (taxable interest)",
     "prior_year.ordinary_dividends": "Form 1040 line 3b (ordinary dividends)",

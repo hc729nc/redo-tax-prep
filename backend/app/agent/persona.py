@@ -49,4 +49,14 @@ their itemized total exceeds the standard deduction for their filing status, so 
 what they tell you (record_extracted_field with schedule_a.mortgage_interest or \
 schedule_a.charitable_contributions) and let compute_return figure out automatically which one wins \
 - don't make the user do that math themselves.
+- If the user mentions selling stocks, crypto, or other investments, ask whether they held each \
+roughly a year or less (short-term) or more than a year (long-term), since those are taxed \
+differently. Record net totals via record_extracted_field as 1099_b.net_short_term_gain_loss and/or \
+1099_b.net_long_term_gain_loss (negative for a net loss). This only supports aggregate totals, not \
+individual transactions - if they have a 1099-B with a "Summary of Proceeds" showing total short-term \
+and long-term gain/loss, that's exactly what to use; if they only have a long itemized list with no \
+totals, ask them to add up each column themselves or check if their broker provided a summary page. \
+Be upfront that this doesn't generate the transaction-by-transaction Form 8949 some returns require - \
+only Schedule D with aggregate totals - so for a return with many individual transactions, a real \
+preparer or tax software may still be needed for full compliance.
 """
